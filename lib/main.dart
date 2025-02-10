@@ -14,13 +14,21 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// Class to store each shape with its type and points
+class DrawingShape {
+  String shapeType;
+  List<Offset> points;
+
+  DrawingShape({required this.shapeType, required this.points});
+}
+
 class DrawingApp extends StatefulWidget {
   @override
   _DrawingAppState createState() => _DrawingAppState();
 }
 
 class _DrawingAppState extends State<DrawingApp> {
-  List<List<Offset>> lines = [];
+  List<DrawingShape> shapes = [];
   String selectedShape = "Line"; // Default shape
   String selectedEmoji = "Smiley"; // Default emoji
 
@@ -71,27 +79,29 @@ class _DrawingAppState extends State<DrawingApp> {
             RenderBox renderBox = context.findRenderObject() as RenderBox;
             final localPosition =
                 renderBox.globalToLocal(details.globalPosition);
-            if (lines.isEmpty || lines.last.isEmpty) {
-              lines.add([localPosition]);
+
+            if (shapes.isEmpty || shapes.last.points.isEmpty) {
+              shapes.add(DrawingShape(
+                  shapeType: selectedShape, points: [localPosition]));
             } else {
-              lines.last.add(localPosition);
+              shapes.last.points.add(localPosition);
             }
           });
         },
         onPanEnd: (_) {
           setState(() {
-            lines.add([]);
+            shapes.add(DrawingShape(shapeType: selectedShape, points: []));
           });
         },
         child: CustomPaint(
-          painter: MyPainter(lines, selectedShape, selectedEmoji),
+          painter: MyPainter(shapes, selectedEmoji),
           size: Size.infinite,
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           setState(() {
-            lines.clear();
+            shapes.clear();
           });
         },
         child: Icon(Icons.clear),
@@ -101,11 +111,10 @@ class _DrawingAppState extends State<DrawingApp> {
 }
 
 class MyPainter extends CustomPainter {
-  final List<List<Offset>> lines;
-  final String shapeType;
+  final List<DrawingShape> shapes;
   final String emojiType;
 
-  MyPainter(this.lines, this.shapeType, this.emojiType);
+  MyPainter(this.shapes, this.emojiType);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -114,26 +123,26 @@ class MyPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 5.0;
 
-    for (final line in lines) {
-      if (line.length < 2) continue;
+    for (final shape in shapes) {
+      if (shape.points.length < 2) continue;
 
-      if (shapeType == "Line") {
-        for (int i = 0; i < line.length - 1; i++) {
-          canvas.drawLine(line[i], line[i + 1], paint);
+      if (shape.shapeType == "Line") {
+        for (int i = 0; i < shape.points.length - 1; i++) {
+          canvas.drawLine(shape.points[i], shape.points[i + 1], paint);
         }
-      } else if (shapeType == "Square") {
-        final start = line.first;
-        final end = line.last;
+      } else if (shape.shapeType == "Square") {
+        final start = shape.points.first;
+        final end = shape.points.last;
         final rect = Rect.fromPoints(start, end);
         canvas.drawRect(rect, paint);
-      } else if (shapeType == "Circle") {
-        final start = line.first;
-        final end = line.last;
+      } else if (shape.shapeType == "Circle") {
+        final start = shape.points.first;
+        final end = shape.points.last;
         final radius = (end - start).distance / 2;
         canvas.drawCircle(start, radius, paint);
-      } else if (shapeType == "Arc") {
-        final start = line.first;
-        final end = line.last;
+      } else if (shape.shapeType == "Arc") {
+        final start = shape.points.first;
+        final end = shape.points.last;
         final rect = Rect.fromPoints(start, end);
         canvas.drawArc(rect, 0, 3.14, false, paint);
       }
@@ -191,6 +200,6 @@ class MyPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true
+    return true;
   }
 }
